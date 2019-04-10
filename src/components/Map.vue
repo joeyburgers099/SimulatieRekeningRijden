@@ -13,7 +13,8 @@
 </template>
 
 <script>
-    import Mapbox from 'mapbox-gl-vue';
+    import Mapbox from 'mapbox-gl';
+
     export default {
         name: 'app',
         components: {

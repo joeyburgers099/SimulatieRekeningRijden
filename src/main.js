@@ -3,7 +3,6 @@
 import Vue from 'vue'
 import App from './App'
 import router from './router'
-import Mapbox from 'mapbox-gl-vue'
 
 Vue.config.productionTip = false
 
@@ -14,7 +13,6 @@ const app = new Vue({
   router,
   components: {
     App,
-    Mapbox
   },
   template: '<App/>'
 })
