@@ -37,6 +37,7 @@
         showDot: function() {
                 // coords
                 var start = [7.426644, 43.740070];
+                this.getRoute(start, this.map);
                 // data variabele voor layer
                 var car = { type: 'FeatureCollection',
                 features: [{

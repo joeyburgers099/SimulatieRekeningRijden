@@ -14,7 +14,7 @@
 
 <script>
     import Mapbox from 'mapbox-gl';
-
+    import turf from ''
     export default {
         name: 'app',
         components: {
