@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import HelloWorld from '../components/HelloWorld'
 import Map from '../components/Map'
 import test from '../components/test'
+import Mapbox from '../components/MapBox'
 
 Vue.use(Router)
 
@@ -22,6 +23,11 @@ export default new Router({
       path: '/test',
       name: 'Test',
       component: test
+    },
+    {
+      path: '/mapbox',
+      name: 'mapbox',
+      component: Mapbox
     }
   ]
 })
