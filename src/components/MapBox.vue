@@ -13,7 +13,9 @@
 
 <style>
     body { margin:0; padding:0; }
-    #map { position:absolute; height: 100%; width:100%; }
+    #Start{margin-left: 15px; margin-bottom: 5px; margin-top: 5px;}
+    #AnimateLine{margin-left: 15px; margin-right: 15px; margin-bottom: 5px; margin-top: 5px;}
+    #map { position:absolute; height: 95%; width:97%; padding: 15px; margin-bottom: 15px;}
 </style>
 
 
