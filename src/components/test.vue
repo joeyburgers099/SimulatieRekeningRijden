@@ -1,16 +1,19 @@
 <template>
-<!--    <div class='overlay'>-->
-
-<!--    </div>-->
-        <div>
+        <div id="wrapper">
+        <div id="button">
                 <button id='Start' @click="showDot2()">Start</button>
-                <div id="map" @click="showDot()"></div>
+        </div>
+                <div id="map" @click="showDot()">
+
+                </div>
         </div>
 </template>
 
 <style>
-    body { margin:0; padding:0; }
-    #map { position:absolute; height: 100%; width:100%; }
+    body { margin:0; padding:5px; }
+    #button{margin-left: 0px; padding-left: 15px; padding-bottom: 5px;padding-right: 5px; padding-top: 5px;}
+    #map { position: absolute; height: 95%; width:97%;
+            padding: 5px; margin: 10px;}
 </style>
 
 
