@@ -3,7 +3,12 @@
         <div id="button">
                 <button id='Start' @click="showDot2()">Start</button>
                 <button id='AnimateLine' @click="animate()">AnimateLine</button>
+
         </div>
+                <div>
+                        <p>Aantal voertuigen: {{ value }}</p>
+                        <input type="number" class="form-control" v-model="value" :min="1" :max="10" inline controls></input>
+                </div>
                 <div id="map" @click="showDot()">
 
                 </div>
@@ -30,7 +35,8 @@
         },
         data() {
             return {
-                counter: 0
+                counter: 0,
+                    value: 1
             }
         },
         mounted() {
