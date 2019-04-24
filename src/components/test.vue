@@ -2,6 +2,7 @@
         <div id="wrapper">
         <div id="button">
                 <button id='Start' @click="showDot2()">Start</button>
+                <button id='AnimateLine' @click="animate()">AnimateLine</button>
         </div>
                 <div id="map" @click="showDot()">
 
@@ -20,7 +21,7 @@
 <script>
     // this is where the code for the next step will go
     import Mapbox from 'mapbox-gl';
-
+    import * as turf from '@turf/turf'
 
     export default {
         name: 'app',
@@ -28,18 +29,19 @@
             'mapbox': Mapbox
         },
         data() {
-            return {}
+            return {
+                counter: 0
+            }
         },
         mounted() {
                 console.log('in mounted()');
             this.createMap();
-            // this.click();
-
         },
         methods: {
         showDot: function() {
                 // coords
                 var start = [7.426644, 43.740070];
+                this.getRoute(start, this.map);
                 // data variabele voor layer
                 var car = { type: 'FeatureCollection',
                 features: [{
@@ -88,6 +90,7 @@
                 if( this.map.getLayer('end')){
                         console.log('endpoint layer bestaat al')
                         this.getRoute(end, this.map);
+
                 }else{
                         this.map.addLayer({
                                 id: 'end',
@@ -142,6 +145,7 @@
                             // if the route already exists on the map, reset it using setData
                             if (map.getSource('route')) {
                                     console.log("in if map.source");
+
                                     map.getSource('route').setData(geojson);
                             } else { // otherwise, make a new request
                                     console.log("in else map.source");
@@ -173,6 +177,88 @@
                             // add turn instructions here at the end
                     };
                     req.send();
+
+            },
+            animate: function () {
+                    var origin = [7.426644, 43.740070];
+                    var destination = [7.415592, 43.735031];
+                    // let route = this.map.getLayer('route');
+                    // A single point that animates along the route.
+                    // Coordinates are initially set to origin.
+                    // let begin = this.map.getLayer('begin');
+                    var route = {
+                            "type": "FeatureCollection",
+                            "features": [{
+                                    "type": "Feature",
+                                    "geometry": {
+                                            "type": "LineString",
+                                            "coordinates": [
+                                                    origin,
+                                                    destination
+                                            ]
+                                    }
+                            }]
+                    };
+
+                        // A single point that animates along the route.
+                        // Coordinates are initially set to origin.
+                    var point = {
+                            "type": "FeatureCollection",
+                            "features": [{
+                                    "type": "Feature",
+                                    "properties": {},
+                                    "geometry": {
+                                            "type": "Point",
+                                            "coordinates": origin
+                                    }
+                            }]
+                    };
+                    // Calculate the distance in kilometers between route start/end point.
+                    var options= {units: 'kilometers'};
+                    let lineDistance = turf.lineDistance(route.features[0],options);
+
+                    let arc = [];
+
+                    // Number of steps to use in the arc and animation, more steps means
+                    // a smoother arc and animation, but too many steps will result in a
+                    // low frame rate
+                    let steps = 300;
+
+                    // Draw an arc between the `origin` & `destination` of the two points
+                    for (let i = 0; i < lineDistance; i += lineDistance / steps) {
+                            let segment = turf.along(route.features[0], i, options);
+                            arc.push(segment.geometry.coordinates);
+                    }
+
+                    // Update the route with calculated arc coordinates
+                    route.features[0].geometry.coordinates = arc;
+
+                    this.visualiseAnimate(point, route, steps);
+            },
+            visualiseAnimate: function(point, route, steps){
+                // Used to increment the value of the point measurement against the route.
+
+                // Update point geometry to a new position based on counter denoting
+                // the index to access the arc.
+                point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[this.counter];
+
+                // Calculate the bearing to ensure the icon is rotated to match the route arc
+                // The bearing is calculate between the current point and the next point, except
+                // at the end of the arc use the previous point and the current point
+                point.features[0].properties.bearing = turf.bearing(
+                    turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter - 1 : this.counter]),
+                    turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter : this.counter + 1])
+                );
+
+                // Update the source with this new data.
+                this.map.getSource('begin').setData(point);
+
+                // Request the next frame of animation so long the end has not been reached.
+                if (this.counter < steps) {
+                    requestAnimationFrame(this.animate);
+                }
+
+                this.counter = this.counter + 1;
             }
         }
     }

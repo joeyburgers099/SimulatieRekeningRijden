@@ -14,7 +14,6 @@
 
 <script>
     import Mapbox from 'mapbox-gl';
-
     export default {
         name: 'app',
         components: {
