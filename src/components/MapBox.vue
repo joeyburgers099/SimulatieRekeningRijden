@@ -20,7 +20,7 @@
 <script>
     // this is where the code for the next step will go
     import Mapbox from 'mapbox-gl';
-    import turf from 'turf';
+    import * as turf from '@turf/turf';
 
     export default {
         name: 'app',
@@ -137,19 +137,23 @@
                     }]
                 };
 
+                var options = {
+                    units:'kilometers'
+                }
+
                 // Calculate the distance in kilometers between route start/end point.
-                var lineDistance = turf.lineDistance(route.features[0], 'kilometers');
+                var lineDistance = turf.lineDistance(route.features[0], options);
 
                 var arc = [];
 
                 // Number of steps to use in the arc and animation, more steps means
                 // a smoother arc and animation, but too many steps will result in a
                 // low frame rate
-                var steps = 10;
+                var steps = 500;
 
                 // Draw an arc between the `origin` & `destination` of the two points
                 for (var i = 0; i < lineDistance; i += lineDistance / steps) {
-                    var segment = turf.along(route.features[0], i, 'kilometers');
+                    var segment = turf.along(route.features[0], i, options);
                     arc.push(segment.geometry.coordinates);
                 }
 
@@ -159,29 +163,147 @@
                 // Used to increment the value of the point measurement against the route.
                 var counter = 0;
 
-                // Update point geometry to a new position based on counter denoting
-                // the index to access the arc.
-                point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[counter];
 
-                // Calculate the bearing to ensure the icon is rotated to match the route arc
-                // The bearing is calculate between the current point and the next point, except
-                // at the end of the arc use the previous point and the current point
-                point.features[0].properties.bearing = turf.bearing(
-                    turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter - 1 : counter]),
-                    turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter : counter + 1])
-                );
+                this.map.on('load', function () {
+                    // Add a source and layer displaying a point which will be animated in a circle.
+                    this.map.addSource('route', {
+                        "type": "geojson",
+                        "data": route
+                    });
 
-                // Update the source with this new data.
-                this.map.getLayer('begin').data=point;
+                    this.map.addSource('point', {
+                        "type": "geojson",
+                        "data": point
+                    });
 
-                // Request the next frame of animation so long the end has not been reached.
-                if (counter < steps) {
-                    requestAnimationFrame(this.animateLine);
-                }
+                    this.map.addLayer({
+                        "id": "route",
+                        "source": "route",
+                        "type": "line",
+                        "paint": {
+                            "line-width": 2,
+                            "line-color": "#007cbf"
+                        }
+                    });
 
-                counter = counter + 1;
+                    this.map.addLayer({
+                        "id": "point",
+                        "source": "point",
+                        "type": "symbol",
+                        "layout": {
+                            "icon-image": "airport-15",
+                            "icon-rotate": ["get", "bearing"],
+                            "icon-rotation-alignment": "map",
+                            "icon-allow-overlap": true,
+                            "icon-ignore-placement": true
+                        }
+                    });
 
-                this.animateLine(counter);
+                    function animate() {
+                        // Update point geometry to a new position based on counter denoting
+                        // the index to access the arc.
+                        point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[counter];
+
+                        // Calculate the bearing to ensure the icon is rotated to match the route arc
+                        // The bearing is calculate between the current point and the next point, except
+                        // at the end of the arc use the previous point and the current point
+                        point.features[0].properties.bearing = turf.bearing(
+                            turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter - 1 : counter]),
+                            turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter : counter + 1])
+                        );
+
+                        // Update the source with this new data.
+                        this.map.getLayer('point').data=point;
+
+                        // Request the next frame of animation so long the end has not been reached.
+                        if (counter < steps) {
+                            requestAnimationFrame(animate);
+                        }
+
+                        counter = counter + 1;
+                    }
+
+                    document.getElementById('replay').addEventListener('click', function() {
+                        // Set the coordinates of the original point back to origin
+                        point.features[0].geometry.coordinates = origin;
+
+                        // Update the source layer
+                        map.getSource('point').setData(point);
+
+                        // Reset the counter
+                        counter = 0;
+
+                        // Restart the animation.
+                        animate(counter);
+                    });
+
+                    // Start the animation.
+                    animate(counter);
+                });
+
+                // if (this.map.getSource('route')) {
+                //     console.log("route bestaal al");
+                // } else { // otherwise, make a new request
+                //     console.log("andere route");
+                //     this.map.addSource('route', {
+                //         type: "geojson",
+                //         data: route
+                //     });
+                //     this.map.addLayer({
+                //         id: 'route',
+                //         source: 'route',
+                //         type: "line",
+                //         paint: {
+                //             'line-color': '#007cbf',
+                //             'line-width': 2
+                //         }
+                //     });
+                // }
+                // if (this.map.getSource('point')) {
+                //     console.log("point bestaal al");
+                // } else { // otherwise, make a new request
+                //     console.log("andere point");
+                //     this.map.addSource('point', {
+                //         type: "geojson",
+                //         data: point
+                //     });
+                //     this.map.addLayer({
+                //         id: 'point',
+                //         source: 'point',
+                //         type: 'symbol',
+                //         layout: {
+                //             'icon-image': 'airport-15',
+                //             'icon-rotate': ['get', 'bearing'],
+                //             'icon-rotation-alignment': 'map',
+                //             'icon-allow-overlap': true,
+                //             'icon-ignore-placement': true
+                //         }
+                //     });
+                // }
+                //
+                // // Update point geometry to a new position based on counter denoting
+                // // the index to access the arc.
+                // point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[counter];
+                //
+                // // Calculate the bearing to ensure the icon is rotated to match the route arc
+                // // The bearing is calculate between the current point and the next point, except
+                // // at the end of the arc use the previous point and the current point
+                // point.features[0].properties.bearing = turf.bearing(
+                //     turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter - 1 : counter]),
+                //     turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter : counter + 1])
+                // );
+                //
+                // // Update the source with this new data.
+                // this.map.getLayer('point').data=point;
+                //
+                // // Request the next frame of animation so long the end has not been reached.
+                // if (counter < steps) {
+                //     requestAnimationFrame(this.animateLine);
+                // }
+                //
+                // counter = counter + 1;
+                //
+                // this.animateLine(counter);
             },
             // Maakt de map aan
             createMap: function () {
