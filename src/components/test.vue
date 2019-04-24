@@ -29,7 +29,9 @@
             'mapbox': Mapbox
         },
         data() {
-            return {}
+            return {
+                counter: 0
+            }
         },
         mounted() {
                 console.log('in mounted()');
@@ -220,7 +222,7 @@
                     // Number of steps to use in the arc and animation, more steps means
                     // a smoother arc and animation, but too many steps will result in a
                     // low frame rate
-                    let steps = 500;
+                    let steps = 300;
 
                     // Draw an arc between the `origin` & `destination` of the two points
                     for (let i = 0; i < lineDistance; i += lineDistance / steps) {
@@ -231,31 +233,32 @@
                     // Update the route with calculated arc coordinates
                     route.features[0].geometry.coordinates = arc;
 
-                    // Used to increment the value of the point measurement against the route.
-                    let counter = 0;
+                    this.visualiseAnimate(point, route, steps);
+            },
+            visualiseAnimate: function(point, route, steps){
+                // Used to increment the value of the point measurement against the route.
 
-                    // Update point geometry to a new position based on counter denoting
-                    // the index to access the arc.
-                    point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[counter];
+                // Update point geometry to a new position based on counter denoting
+                // the index to access the arc.
+                point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[this.counter];
 
-                    // Calculate the bearing to ensure the icon is rotated to match the route arc
-                    // The bearing is calculate between the current point and the next point, except
-                    // at the end of the arc use the previous point and the current point
-                    point.features[0].properties.bearing = turf.bearing(
-                            turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter - 1 : counter]),
-                            turf.point(route.features[0].geometry.coordinates[counter >= steps ? counter : counter + 1])
-                    );
+                // Calculate the bearing to ensure the icon is rotated to match the route arc
+                // The bearing is calculate between the current point and the next point, except
+                // at the end of the arc use the previous point and the current point
+                point.features[0].properties.bearing = turf.bearing(
+                    turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter - 1 : this.counter]),
+                    turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter : this.counter + 1])
+                );
 
-                    // Update the source with this new data.
-                    this.map.getSource('begin').setData(point);
+                // Update the source with this new data.
+                this.map.getSource('begin').setData(point);
 
-                    // Request the next frame of animation so long the end has not been reached.
-                    if (counter < steps) {
-                            requestAnimationFrame(this.animate);
-                    }
+                // Request the next frame of animation so long the end has not been reached.
+                if (this.counter < steps) {
+                    requestAnimationFrame(this.animate);
+                }
 
-                    counter = counter + 1;
-                    this.animate(counter);
+                this.counter = this.counter + 1;
             }
         }
     }
