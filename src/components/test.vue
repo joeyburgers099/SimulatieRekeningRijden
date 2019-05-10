@@ -2,7 +2,7 @@
         <div id="wrapper">
         <div id="button">
                 <button id='Start' @click="showDot2()">Start</button>
-                <button id='AnimateLine' @click="animate()">AnimateLine</button>
+                <button id='AnimateLine' @click="startAnimate()">AnimateLine</button>
 
         </div>
                 <div>
@@ -27,6 +27,7 @@
     // this is where the code for the next step will go
     import Mapbox from 'mapbox-gl';
     import * as turf from '@turf/turf'
+    import axios from 'axios'
 
     export default {
         name: 'app',
@@ -35,18 +36,46 @@
         },
         data() {
             return {
+                lastroutesindex: 0,
+                currentroutesindex: 1,
                 counter: 0,
-                    value: 1
+                    value: 1,
+                 routes: [],
+                starteneindpunten: [],
+                currBegin: [],
+                currEnd: [],
+                point: undefined,
             }
         },
         mounted() {
                 console.log('in mounted()');
             this.createMap();
+            this.setstarteneindpunten();
+            this.generateRoutes();
         },
         methods: {
+            setstarteneindpunten: function(){
+                var start = [7.426644, 43.740070];
+                var end = [7.415592, 43.735031];
+                var routes = [];
+                this.starteneindpunten.push([start, end, routes]);
+
+                console.log(this.starteneindpunten);
+            },
+            generateRoutes: async function(){
+                var start = this.starteneindpunten[0][0];
+                var end = this.starteneindpunten[0][1];
+                console.log('generateroutes: ' + start + ' , ' + end);
+                this.routes = await this.getroute2(start, end ).then(function(response) {
+                    var result = JSON.parse(JSON.stringify(response));
+                    var routes = result.data.routes[0].geometry.coordinates;
+                    return routes;
+                });
+                this.starteneindpunten[0][2] = this.routes;
+            },
         showDot: function() {
                 // coords
-                var start = [7.426644, 43.740070];
+                var start = this.starteneindpunten[0][0];//[7.426644, 43.740070];
                 this.getRoute(start, this.map);
                 // data variabele voor layer
                 var car = { type: 'FeatureCollection',
@@ -78,40 +107,40 @@
 
         },
 
-                showDot2: function(){
-                // coords
-                var end = [7.415592, 43.735031];
-                // data variabele voor de layer
-                var endpoint = {
-                        type: 'FeatureCollection',
-                        features: [{
-                                type: 'Feature',
-                                properties: {},
-                                geometry: {
-                                        type: 'Point',
-                                        coordinates: end
-                                }
-                        }]};
-                // Als de layer niet bestaat maak hem aan anders niet.
-                if( this.map.getLayer('end')){
-                        console.log('endpoint layer bestaat al')
-                        this.getRoute(end, this.map);
-
-                }else{
-                        this.map.addLayer({
-                                id: 'end',
-                                type: 'circle',
-                                source: {
-                                        type: 'geojson',
-                                        data: endpoint
-                                },
-                                paint: {
-                                        'circle-radius': 9,
-                                        'circle-color': '#f30'
-                                }
-                        });
-                }
-                },
+                // showDot2: function(){
+                // // coords
+                // var end = [7.415592, 43.735031];
+                // // data variabele voor de layer
+                // var endpoint = {
+                //         type: 'FeatureCollection',
+                //         features: [{
+                //                 type: 'Feature',
+                //                 properties: {},
+                //                 geometry: {
+                //                         type: 'Point',
+                //                         coordinates: end
+                //                 }
+                //         }]};
+                // // Als de layer niet bestaat maak hem aan anders niet.
+                // if( this.map.getLayer('end')){
+                //         console.log('endpoint layer bestaat al')
+                //         this.getRoute(end, this.map);
+                //
+                // }else{
+                //         this.map.addLayer({
+                //                 id: 'end',
+                //                 type: 'circle',
+                //                 source: {
+                //                         type: 'geojson',
+                //                         data: endpoint
+                //                 },
+                //                 paint: {
+                //                         'circle-radius': 9,
+                //                         'circle-color': '#f30'
+                //                 }
+                //         });
+                // }
+                // },
                 // Maakt de map aan
             createMap: function () {
                     console.log('in createMap')
@@ -123,71 +152,140 @@
                             zoom: 13 // starting zoom
                     })
             },
-            getRoute: function(end, map) {
-                    // make a directions request using cycling profile
-                    // an arbitrary start will always be the same
+                getroute2: async function(start, end) {
+                    console.log('in getroute2');
+                    // make a directions request using driving profile
                     // only the end or destination will change
-                    var start = [7.426644, 43.740070];
+                    // var start = [7.426644, 43.740070];
+                    // an arbitrary start will always be the same
                     var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + start[0] + ',' + start[1] + ';' + end[0] + ',' + end[1] + '?steps=true&geometries=geojson&access_token=' + mapboxgl.accessToken;
 
                     // make an XHR request https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
-                    var req = new XMLHttpRequest();
-                    req.responseType = 'json';
-                    req.open('GET', url, true);
-                    req.onload = function() {
-                            var data = req.response.routes[0];
-                            console.log("data: " + data);
-                            var route = data.geometry.coordinates;
-                            console.log("route: " + route);
-                            var geojson = {
-                                    type: 'Feature',
-                                    properties: {},
-                                    geometry: {
-                                            type: 'LineString',
-                                            coordinates: route
-                                    }
-                            };
-                            console.log("geojson" + geojson);
-                            // if the route already exists on the map, reset it using setData
-                            if (map.getSource('route')) {
-                                    console.log("in if map.source");
+                    return await axios.get(url);
+                },
+            // getRoute: function(end, map) {
+            //         // make a directions request using cycling profile
+            //         // only the end or destination will change
+            //         var start = [7.426644, 43.740070];
+            //         // an arbitrary start will always be the same
+            //         var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + start[0] + ',' + start[1] + ';' + end[0] + ',' + end[1] + '?steps=true&geometries=geojson&access_token=' + mapboxgl.accessToken;
+            //
+            //         // make an XHR request https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+            //         var req = new XMLHttpRequest();
+            //         req.responseType = 'json';
+            //         req.open('GET', url, true);
+            //         req.onload = function() {
+            //                 var data = req.response.routes[0];
+            //                 console.log("data: " + data);
+            //                 var route = data.geometry.coordinates;
+            //                 console.log("route: " + route);
+            //                 var geojson = {
+            //                         type: 'Feature',
+            //                         properties: {},
+            //                         geometry: {
+            //                                 type: 'LineString',
+            //                                 coordinates: route
+            //                         }
+            //                 };
+            //                 console.log("geojson" + geojson);
+            //                 // if the route already exists on the map, reset it using setData
+            //                 if (map.getSource('route')) {
+            //                         console.log("in if map.source");
+            //
+            //                         map.getSource('route').setData(geojson);
+            //                 } else { // otherwise, make a new request
+            //                         console.log("in else map.source");
+            //                         map.addLayer({
+            //                                 id: 'route',
+            //                                 type: 'line',
+            //                                 source: {
+            //                                         type: 'geojson',
+            //                                         data: {
+            //                                                 type: 'Feature',
+            //                                                 properties: {},
+            //                                                 geometry: {
+            //                                                         type: 'LineString',
+            //                                                         coordinates: geojson
+            //                                                 }
+            //                                         }
+            //                                 },
+            //                                 layout: {
+            //                                         'line-join': 'round',
+            //                                         'line-cap': 'round'
+            //                                 },
+            //                                 paint: {
+            //                                         'line-color': '#3887be',
+            //                                         'line-width': 5,
+            //                                         'line-opacity': 0.75
+            //                                 }
+            //                         });
+            //                 }
+            //                 // add turn instructions here at the end
+            //         };
+            //         req.send();
+            //
+            // },
+            getBegin: function(index) {
+                var begin = this.starteneindpunten[0][index];
+                return begin;
+            },
+            getRouting: function(index) {
+                var end = this.starteneindpunten[0][2][index];
+                return end;
+            },
+            startAnimate: function() {
 
-                                    map.getSource('route').setData(geojson);
-                            } else { // otherwise, make a new request
-                                    console.log("in else map.source");
-                                    map.addLayer({
-                                            id: 'route',
-                                            type: 'line',
-                                            source: {
-                                                    type: 'geojson',
-                                                    data: {
-                                                            type: 'Feature',
-                                                            properties: {},
-                                                            geometry: {
-                                                                    type: 'LineString',
-                                                                    coordinates: geojson
-                                                            }
-                                                    }
-                                            },
-                                            layout: {
-                                                    'line-join': 'round',
-                                                    'line-cap': 'round'
-                                            },
-                                            paint: {
-                                                    'line-color': '#3887be',
-                                                    'line-width': 5,
-                                                    'line-opacity': 0.75
-                                            }
-                                    });
-                            }
-                            // add turn instructions here at the end
-                    };
-                    req.send();
+                this.currBegin = this.getBegin(this.lastroutesindex);
+                this.currEnd = this.getRouting(this.currentroutesindex);
+                console.log('in startanimate: begin: ' + this.currBegin + ' end: ' + this.currEnd);
+                this.point = {
+                    "type": "FeatureCollection",
+                    "features": [{
+                        "type": "Feature",
+                        "properties": {},
+                        "geometry": {
+                            "type": "Point",
+                                "coordinates": this.currBegin
+                        }
+                    }]
+                };
+
+                this.map.addSource('car', {
+                        'type': 'geojson',
+                        'data': this.point
+                    });
+                this.map.addLayer({
+                    id: 'car',
+                    type: 'circle',
+                    source: 'car',
+                    paint: {
+                        'circle-radius': 9,
+                        'circle-color': '#59be2f'
+                    }
+                });
+                this.animate();
 
             },
+            getnextdestination: function(){
+                this.lastroutesindex = this.currentroutesindex;
+                this.currentroutesindex++;
+                this.currBegin = this.getRouting(this.lastroutesindex);
+                this.currEnd = this.getRouting(this.currentroutesindex);
+                this.counter = 0;
+                console.log('nextdestination ' + this.lastroutesindex + ' | ' + this.currentroutesindex);
+                this.animate();
+            },
             animate: function () {
-                    var origin = [7.426644, 43.740070];
-                    var destination = [7.415592, 43.735031];
+                 console.log('inanimate begn: ' + this.currBegin + ' end: ' + this.currEnd);
+                //     // var origin = [7.426644, 43.740070];
+                //     // var destination = [7.415592, 43.735031];
+                //
+                //     if(begin !== undefined && end !== undefined){
+                //         console.log('!==undefined');
+                //         this.currBegin = begin;
+                //         this.currEnd = end;
+                //     }
+                // console.log('curbegin' + this.currBegin + ' curend ' + this.currEnd);
                     // let route = this.map.getLayer('route');
                     // A single point that animates along the route.
                     // Coordinates are initially set to origin.
@@ -199,8 +297,8 @@
                                     "geometry": {
                                             "type": "LineString",
                                             "coordinates": [
-                                                    origin,
-                                                    destination
+                                                    this.currBegin,
+                                                    this.currEnd
                                             ]
                                     }
                             }]
@@ -208,17 +306,18 @@
 
                         // A single point that animates along the route.
                         // Coordinates are initially set to origin.
-                    var point = {
-                            "type": "FeatureCollection",
-                            "features": [{
-                                    "type": "Feature",
-                                    "properties": {},
-                                    "geometry": {
-                                            "type": "Point",
-                                            "coordinates": origin
-                                    }
-                            }]
-                    };
+
+                    // var point = {
+                    //         "type": "FeatureCollection",
+                    //         "features": [{
+                    //                 "type": "Feature",
+                    //                 "properties": {},
+                    //                 "geometry": {
+                    //                         "type": "Point",
+                    //                         "coordinates": this.currBegin
+                    //                 }
+                    //         }]
+                    // };
                     // Calculate the distance in kilometers between route start/end point.
                     var options= {units: 'kilometers'};
                     let lineDistance = turf.lineDistance(route.features[0],options);
@@ -228,7 +327,7 @@
                     // Number of steps to use in the arc and animation, more steps means
                     // a smoother arc and animation, but too many steps will result in a
                     // low frame rate
-                    let steps = 300;
+                    let steps = 40;
 
                     // Draw an arc between the `origin` & `destination` of the two points
                     for (let i = 0; i < lineDistance; i += lineDistance / steps) {
@@ -239,7 +338,7 @@
                     // Update the route with calculated arc coordinates
                     route.features[0].geometry.coordinates = arc;
 
-                    this.visualiseAnimate(point, route, steps);
+                    this.visualiseAnimate(this.point, route, steps);
             },
             visualiseAnimate: function(point, route, steps){
                 // Used to increment the value of the point measurement against the route.
@@ -257,11 +356,14 @@
                 );
 
                 // Update the source with this new data.
-                this.map.getSource('begin').setData(point);
+                this.map.getSource('car').setData(point);
 
                 // Request the next frame of animation so long the end has not been reached.
                 if (this.counter < steps) {
+                    console.log(this.counter + ' steps ' + steps);
                     requestAnimationFrame(this.animate);
+                } else{
+                    this.getnextdestination();
                 }
 
                 this.counter = this.counter + 1;
