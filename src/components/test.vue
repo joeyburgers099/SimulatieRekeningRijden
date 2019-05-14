@@ -61,8 +61,7 @@
         mounted() {
                 console.log('in mounted()');
             this.createMap();
-            this.setstarteneindpunten();
-            this.generateRoutes();
+            this.initCars();
         },
         methods: {
             setlist: function(start, end){
@@ -77,20 +76,26 @@
                 end = [7.439061, 43.74683];
                 // this.starteneindpunten.push([start, end, routes, 0, 1, [], []]);
                 this.setlist(start, end);
+                start = [7.427037,43.731962];
+                end = [7.418660, 43.725329];
+                this.setlist(start, end);
 
                 console.log('setstarteneindpunten: ' + this.starteneindpunten);
             },
+                generateRoute: async function(index){
+                    var start = this.getBegin(index);
+                    var end =  this.getEnd(index);//this.starteneindpunten[i][1];
+                        console.log('generateroutes: ' + index + ' ' + start + ' | ' + end);
+                        var routes = await this.getroute2(start, end ).then(function(response) {
+                                var result = JSON.parse(JSON.stringify(response));
+                                var routes = result.data.routes[0].geometry.coordinates;
+                                return routes;
+                        });
+                        this.starteneindpunten[index][2] = routes;
+                },
             generateRoutes: async function(){
                 for(var i = 0; i <  this.starteneindpunten.length; i++){
-                    var start = this.getBegin(i);//this.starteneindpunten[i][0];
-                    var end =  this.getEnd(i);//this.starteneindpunten[i][1];
-                    console.log('generateroutes: ' + i + ' ' + start + ' | ' + end);
-                    this.routes = await this.getroute2(start, end ).then(function(response) {
-                        var result = JSON.parse(JSON.stringify(response));
-                        var routes = result.data.routes[0].geometry.coordinates;
-                        return routes;
-                    });
-                    this.starteneindpunten[i][2] = this.routes;
+                        this.generateRoute(i);
                 }
                 console.log(this.starteneindpunten);
             },
@@ -134,8 +139,14 @@
                 var end = this.starteneindpunten[index][1];
                 return end;
             },
+                setEnd: function(index, end){
+                  this.starteneindpunten[index][1] = end;
+                },
+                setBegin: function(index, begin){
+                  this.starteneindpunten[index][0] = begin;
+                },
             getRouting: function(currindex, index) {
-                    console.log('getrouting' + currindex + ' | ' + index);
+                    // console.log('getrouting' + currindex + ' | ' + index);
                 var end = this.starteneindpunten[currindex][2][index];
                 return end;
             },
@@ -179,14 +190,20 @@
             setCurrentEnd: function(i, end){
                 this.starteneindpunten[i][6] = end;
             },
+                initCars: function(){
+                    this.setstarteneindpunten();
+                    this.generateRoutes();
+                },
             startAnimate: function() {
-                for(var i = 0; i < this.starteneindpunten.length; i++){
+                   // this.initCars();
+
+                for(var i = 0; i < this.value; i++){
 
                     // this.starteneindpunten[i][5] = this.getBegin(i);
                     this.setCurrentBegin(i, this.getBegin(i));
                     this.setCurrentEnd(i, this.getRouting(i, this.getCurrentrouteindex(i)));
                     // this.starteneindpunten[i][6] = this.getRouting(i, this.getCurrentrouteindex(i));
-                    console.log(i + ' in startanimate: begin: ' +this.getCurrentBegin(i) + ' end: ' + this.getCurrentEnd(i));
+                    // console.log(i + ' in startanimate: begin: ' +this.getCurrentBegin(i) + ' end: ' + this.getCurrentEnd(i));
                     this.setPoint(i, this.getCurrentBegin(i));
 
 
@@ -209,7 +226,7 @@
 
             },
             getnextdestination: function(i){
-                    console.log(i + ' ' + this.starteneindpunten);
+                    // console.log(i + ' ' + this.starteneindpunten);
                 // this.lastroutesindex = this.currentroutesindex;
                 this.setLastrouteindex(i, this.getCurrentrouteindex(i));
                 // this.currentroutesindex++;
@@ -219,9 +236,11 @@
 
                 this.setCurrentBegin(i, this.getRouting(i, this.getLastrouteindex(i)));
                 this.setCurrentEnd(i, this.getRouting(i, this.getCurrentrouteindex(i)));
+
+
                 this.setCounterToZero(i);
 
-                console.log('nextdestination ' + this.getLastrouteindex(i) + ' | ' + this.getCurrentrouteindex(i) +
+                console.log(i + ' nextdestination ' + this.getLastrouteindex(i) + ' | ' + this.getCurrentrouteindex(i) +
                         ' | ' + this.getCurrentBegin(i) + ' | ' + this.getCurrentEnd(i));
                 this.animate(i);
             },
@@ -231,7 +250,7 @@
                 // for(var index = 0; index < this.starteneindpunten.length; index++) {
 
                     // console.log('animate: ' + this.starteneindpunten);
-                     console.log(index +' inanimate begn: ' + this.getCurrentBegin(index) + ' end: ' + this.getCurrentEnd(index));
+                    //  console.log(index +' inanimate begn: ' + this.getCurrentBegin(index) + ' end: ' + this.getCurrentEnd(index));
 
                     var route = {
                         "type": "FeatureCollection",
@@ -256,7 +275,7 @@
                     // Number of steps to use in the arc and animation, more steps means
                     // a smoother arc and animation, but too many steps will result in a
                     // low frame rate
-                    let steps = 50;
+                    let steps = 40;
 
                     // Draw an arc between the `origin` & `destination` of the two points
                     for (let i = 0; i < lineDistance; i += lineDistance / steps) {
