@@ -1,13 +1,13 @@
 <template>
         <div id="wrapper">
         <div id="button">
-                <button id='Start' @click="showDot2()">Start</button>
-                <button id='AnimateLine' @click="startAnimate()">AnimateLine</button>
+                <button id='Start' @click="startAnimate()">Start</button>
+<!--                <button id='AnimateLine' @click="startAnimate()">AnimateLine</button>-->
 
         </div>
                 <div>
                         <p>Aantal voertuigen: {{ value }}</p>
-                        <input type="number" class="form-control" v-model="value" :min="1" :max="10" inline controls></input>
+                        <input type="number" class="form-control" v-model="value" :min="1" :max="3" inline controls></input>
                 </div>
                 <div id="map" @click="showDot()">
 
@@ -31,31 +31,37 @@
 
     export default {
         name: 'app',
-        car: {
-            start: null,
-            end: null,
-            routes: null,
-            lastroutesindex: 0,
-            currentroutesindex:1,
-            currBegin: null,
-            currEnd: null
-        },
+        // car: {
+        //     start: null,
+        //     end: null,
+        //     routes: null,
+        //     lastroutesindex: 0,
+        //     currentroutesindex:1,
+        //     currBegin: null,
+        //     currEnd: null
+        // },
         components: {
             'mapbox': Mapbox
         },
         data() {
             return {
-                // lastroutesindex: 0,
-                // currentroutesindex: 1,
                 counter: 0,
                     value: 1,
-                 // routes: [],
+
                 //0: start, 1: end, 2: routes, 3: lastroutesindex, 4: currentroutesindex, 5: currentBegin, 6: currentEnd, 7: point, 8: counter
                 starteneindpunten: [],
-
-                // currBegin: [],
-                // currEnd: [],
-                // point: undefined,
+                cartrackers: [{
+                        // id: -1,
+                        movements: [{
+                                 distance: -1,
+                                 duration: -1,
+                                 streetName: ''
+                        }],
+                        totalDistance: 0,
+                        totalDuration: 0,
+                        beginTime: 0,
+                        endTime: 0
+                }]
             }
         },
         mounted() {
@@ -71,11 +77,11 @@
                 var start = [7.426644, 43.740070];
                 var end = [7.415592, 43.735031];
                 this.setlist(start, end);
-                // this.starteneindpunten.push([start, end, routes, 0 , 1 , [], []]);
+
                 start = [7.423555, 43.727910];
                 end = [7.439061, 43.74683];
-                // this.starteneindpunten.push([start, end, routes, 0, 1, [], []]);
                 this.setlist(start, end);
+
                 start = [7.427037,43.731962];
                 end = [7.418660, 43.725329];
                 this.setlist(start, end);
@@ -86,12 +92,29 @@
                     var start = this.getBegin(index);
                     var end =  this.getEnd(index);//this.starteneindpunten[i][1];
                         console.log('generateroutes: ' + index + ' ' + start + ' | ' + end);
-                        var routes = await this.getroute2(start, end ).then(function(response) {
-                                var result = JSON.parse(JSON.stringify(response));
-                                var routes = result.data.routes[0].geometry.coordinates;
-                                return routes;
+                        var res = await this.getroute2(start, end ).then(function(response) {
+                                return response;
                         });
+                        var result = JSON.parse(JSON.stringify(res));
+                        console.log(' coords: ' + JSON.stringify(result.data.routes[0].geometry.coordinates) + '    |   ');
+                        var routes = result.data.routes[0].geometry.coordinates;
+                        var totalDistance = JSON.stringify(result.data.routes[0].distance);
+                        var totalDuration = JSON.stringify(result.data.routes[0].duration);
+                        var movements = [];
+                        var steps = result.data.routes[0].legs[0].steps;
+                        for(let i = 0; i < steps.length; i++){
+                                movements.push({duration: steps[i].duration,
+                                                distance: steps[i].distance,
+                                                streetName: steps[i].name});
+                        }
+                        let begintime = this.getCurrentDate();
+
+                        this.cartrackers[index] = {movements: movements, totalDistance: totalDistance, totalDuration: totalDuration, beginTime: begintime};
+                        for(let i = 0; i< this.cartrackers.length; i++){
+                                console.log('cartracker ' + i + ':  ' + JSON.stringify(this.cartrackers[i]));
+                        }
                         this.starteneindpunten[index][2] = routes;
+
                 },
             generateRoutes: async function(){
                 for(var i = 0; i <  this.starteneindpunten.length; i++){
@@ -115,12 +138,25 @@
                     console.log('in getroute2');
                     // make a directions request using driving profile
                     // only the end or destination will change
-                    // var start = [7.426644, 43.740070];
                     // an arbitrary start will always be the same
-                    var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + start[0] + ',' + start[1] + ';' + end[0] + ',' + end[1] + '?steps=true&geometries=geojson&access_token=' + mapboxgl.accessToken;
+                    var url = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + start[0] + ',' + start[1] + ';' + end[0] + ',' + end[1]
+                            + '?steps=true&geometries=geojson&access_token=' + mapboxgl.accessToken;
 
                     // make an XHR request https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
                     return await axios.get(url);
+                },
+                sendCartracker: function(index){
+                    console.log('in sendCartracker');
+                    let cartracker = this.cartrackers[index];
+                        var url = '';
+
+                        axios.post(url);
+                },
+                getCurrentDate: function(){
+                    let myDate = new Date();
+                    const options = {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'};
+                    let date = myDate.toLocaleDateString('nl-NL',options);
+                    return date;
                 },
             getCounter: function(index){
                 return this.starteneindpunten[index][8];
@@ -146,7 +182,6 @@
                   this.starteneindpunten[index][0] = begin;
                 },
             getRouting: function(currindex, index) {
-                    // console.log('getrouting' + currindex + ' | ' + index);
                 var end = this.starteneindpunten[currindex][2][index];
                 return end;
             },
@@ -195,15 +230,13 @@
                     this.generateRoutes();
                 },
             startAnimate: function() {
-                   // this.initCars();
 
                 for(var i = 0; i < this.value; i++){
 
-                    // this.starteneindpunten[i][5] = this.getBegin(i);
+
                     this.setCurrentBegin(i, this.getBegin(i));
                     this.setCurrentEnd(i, this.getRouting(i, this.getCurrentrouteindex(i)));
-                    // this.starteneindpunten[i][6] = this.getRouting(i, this.getCurrentrouteindex(i));
-                    // console.log(i + ' in startanimate: begin: ' +this.getCurrentBegin(i) + ' end: ' + this.getCurrentEnd(i));
+
                     this.setPoint(i, this.getCurrentBegin(i));
 
 
@@ -211,47 +244,71 @@
                         'type': 'geojson',
                         'data': this.getPoint(i)
                     });
-                    this.map.addLayer({
-                        id: 'car' + i,
-                        type: 'circle',
-                        source: 'car' + i,
-                        paint: {
-                            'circle-radius': 9,
-                            'circle-color': '#59be2f'
-                        }
-                    });
 
+                    var route = this.starteneindpunten[i][2];
+                    console.log('route ' + route);
+                        var geojson = {
+                                type: 'Feature',
+                                properties: {},
+                                geometry: {
+                                        type: 'LineString',
+                                        coordinates: route
+                                }
+                        };
+                        this.map.addSource('line' + i, {
+                                type: 'geojson',
+                                data: geojson
+                        });
+                        this.map.addLayer({
+                                id: 'route' + i,
+                                type: 'line',
+                                source: 'line' + i,
+                                layout: {
+                                        'line-join': 'round',
+                                        'line-cap': 'round'
+                                },
+                                paint: {
+                                        'line-color': '#3887be',
+                                        'line-width': 5,
+                                        'line-opacity': 0.75
+                                }
+                        });
+                        this.map.addLayer({
+                                id: 'car' + i,
+                                type: 'circle',
+                                source: 'car' + i,
+                                paint: {
+                                        'circle-radius': 9,
+                                        'circle-color': '#59be2f'
+                                }
+                        });
                     this.animate(i);
                 }
 
             },
             getnextdestination: function(i){
-                    // console.log(i + ' ' + this.starteneindpunten);
-                // this.lastroutesindex = this.currentroutesindex;
                 this.setLastrouteindex(i, this.getCurrentrouteindex(i));
-                // this.currentroutesindex++;
+
                 this.setCurrentrouteindex(i);
-                // this.currBegin = this.getRouting(this.lastroutesindex);
-                // this.currEnd = this.getRouting(this.currentroutesindex);
+
 
                 this.setCurrentBegin(i, this.getRouting(i, this.getLastrouteindex(i)));
                 this.setCurrentEnd(i, this.getRouting(i, this.getCurrentrouteindex(i)));
+
 
 
                 this.setCounterToZero(i);
 
                 console.log(i + ' nextdestination ' + this.getLastrouteindex(i) + ' | ' + this.getCurrentrouteindex(i) +
                         ' | ' + this.getCurrentBegin(i) + ' | ' + this.getCurrentEnd(i));
+
+                if(this.getCurrentEnd(i) == undefined){
+                        this.cartrackers[i].endTime = this.getCurrentDate();
+                        this.sendCartracker(i);
+                }
                 this.animate(i);
             },
             animate: function (index) {
-                // console.log('in animate');
-                // console.log(this.starteneindpunten);
-                // for(var index = 0; index < this.starteneindpunten.length; index++) {
-
-                    // console.log('animate: ' + this.starteneindpunten);
-                    //  console.log(index +' inanimate begn: ' + this.getCurrentBegin(index) + ' end: ' + this.getCurrentEnd(index));
-
                     var route = {
                         "type": "FeatureCollection",
                         "features": [{
@@ -275,7 +332,10 @@
                     // Number of steps to use in the arc and animation, more steps means
                     // a smoother arc and animation, but too many steps will result in a
                     // low frame rate
-                    let steps = 40;
+                    // afstand / snelheid * sec * tick
+                    var calcedSteps = Math.ceil(lineDistance / 40 * 3600 * 60);
+
+                    let steps = calcedSteps;
 
                     // Draw an arc between the `origin` & `destination` of the two points
                     for (let i = 0; i < lineDistance; i += lineDistance / steps) {
@@ -297,13 +357,6 @@
                 // the index to access the arc.
                 point.features[0].geometry.coordinates = route.features[0].geometry.coordinates[self.getCounter(index)];
 
-                // Calculate the bearing to ensure the icon is rotated to match the route arc
-                // The bearing is calculate between the current point and the next point, except
-                // at the end of the arc use the previous point and the current point
-                // point.features[0].properties.bearing = turf.bearing(
-                //     turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter - 1 : this.counter]),
-                //     turf.point(route.features[0].geometry.coordinates[this.counter >= steps ? this.counter : this.counter + 1])
-                // );
 
                 // Update the source with this new data.
                     self.map.getSource('car' + index).setData(point);
@@ -318,8 +371,9 @@
                         self.getnextdestination(index);
                 }
                     self.counterPlusOne(index);
-                // this.counter = this.counter + 1;
             }
+
+
             // getRoute: function(end, map) {
             //         // make a directions request using cycling profile
             //         // only the end or destination will change
