@@ -148,9 +148,9 @@
                 sendCartracker: function(index){
                     console.log('in sendCartracker');
                     let cartracker = this.cartrackers[index];
-                        var url = '';
+                        var url = 'http://localhost:8080/VerplaatsingSysteem/resources/Cartracker';
 
-                        axios.post(url);
+                        axios.post(url, {cartracker});
                 },
                 getCurrentDate: function(){
                     let myDate = new Date();
@@ -333,7 +333,7 @@
                     // a smoother arc and animation, but too many steps will result in a
                     // low frame rate
                     // afstand / snelheid * sec * tick
-                    var calcedSteps = Math.ceil(lineDistance / 40 * 3600 * 60);
+                    var calcedSteps = Math.ceil(lineDistance / 40 * 3600 * 1);
 
                     let steps = calcedSteps;
 
