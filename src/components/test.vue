@@ -42,7 +42,7 @@
                 //0: start, 1: end, 2: routes, 3: lastroutesindex, 4: currentroutesindex, 5: currentBegin, 6: currentEnd, 7: point, 8: counter
                 starteneindpunten: [],
                 cartrackers: [{
-                        // id: -1,
+                         id: -1,
                         movements: [{
                                  distance: -1,
                                  duration: -1,
@@ -97,7 +97,7 @@
                     }
                     let begintime = this.getCurrentDate();
 
-                    this.cartrackers[index] = {movements: movements, totalDistance: totalDistance, totalDuration: totalDuration, beginTime: begintime};
+                    this.cartrackers[index] = {id: index, movements: movements, totalDistance: totalDistance, totalDuration: totalDuration, beginTime: begintime};
 
                     this.starteneindpunten[index][2] = routes;
                 },
@@ -290,6 +290,7 @@
                 if(this.getCurrentEnd(i) == undefined){
                         this.cartrackers[i].endTime = this.getCurrentDate();
                         this.sendCartracker(i);
+                        //miss nieuwe route?
                 }
                 this.animate(i);
             },
