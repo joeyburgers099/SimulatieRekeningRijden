@@ -7,7 +7,7 @@
         </div>
                 <div>
                         <p>Aantal voertuigen: {{ value }}</p>
-                        <input type="number" class="form-control" v-model="value" :min="1" :max="3" inline controls></input>
+                        <input type="number" class="form-control" v-model="value" :min="1" :max="7" inline controls></input>
                 </div>
                 <div id="map" @click="showDot()">
 
@@ -42,7 +42,7 @@
                 //0: start, 1: end, 2: routes, 3: lastroutesindex, 4: currentroutesindex, 5: currentBegin, 6: currentEnd, 7: point, 8: counter
                 starteneindpunten: [],
                 cartrackers: [{
-                         id: -1,
+                         cartrackerID: -1,
                         movements: [{
                                  distance: -1,
                                  duration: -1,
@@ -76,6 +76,23 @@
                 start = [7.427037,43.731962];
                 end = [7.418660, 43.725329];
                 this.setlist(start, end);
+
+                start = [7.429727, 43.736529];
+                end = [7.427481, 43.734563];
+                this.setlist(start,end);
+
+
+                start = [7.412593, 43.729713];
+                end = [7.416121, 43.733935];
+                this.setlist(start,end);
+
+                start = [7.438879, 43.749205];
+                end = [7.433467, 43.749079];
+                this.setlist(start,end);
+
+                start = [7.422895, 43.741458];
+                end = [7.412900, 43.733537];
+                this.setlist(start,end);
             },
                 generateRoute: async function(index){
                     let start = this.getBegin(index);
@@ -97,7 +114,7 @@
                     }
                     let begintime = this.getCurrentDate();
 
-                    this.cartrackers[index] = {id: index, movements: movements, totalDistance: totalDistance, totalDuration: totalDuration, beginTime: begintime};
+                    this.cartrackers[index] = {cartrackerID: index, movements: movements, totalDistance: totalDistance, totalDuration: totalDuration, beginTime: begintime};
 
                     this.starteneindpunten[index][2] = routes;
                 },
@@ -133,7 +150,8 @@
                 sendCartracker: function(index){
                     console.log('in sendCartracker');
                     let cartracker = this.cartrackers[index];
-                    let url = 'http://localhost:8080/VerplaatsingSysteem/Cartracker';
+                   //let url = 'http://localhost:8080/VerplaatsingSysteem/Cartracker';
+                    let url = 'http://192.168.25.110:8080/VerplaatsingSysteem/Cartracker';
 
                     axios.post(url, {cartracker});
                 },
@@ -319,7 +337,7 @@
                 // a smoother arc and animation, but too many steps will result in a
                 // low frame rate
                 // afstand / snelheid * sec * tick
-                let calcedSteps = Math.ceil(lineDistance / 40 * 3600 * 1);
+                let calcedSteps = Math.ceil(lineDistance / 40 * 3600 * 10);
 
                 let steps = calcedSteps;
 
